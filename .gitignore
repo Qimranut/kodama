@@ -1,0 +1,15 @@
+# Build output and IDE state
+build/
+out/
+.vs/
+.vscode/
+CMakeUserPresets.json
+*.ipch
+*.pdb
+*.obj
+*.o
+*.exe
+
+# Local audio assets (large and/or separately licensed): keep out of the repo
+*.wav
+*.sofa
