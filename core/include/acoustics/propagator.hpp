@@ -1,5 +1,5 @@
 #pragma once
-#include <iostream>
+
 // Ray 
 #include <acoustics/ray.hpp>
 
@@ -22,6 +22,8 @@
 #include <material/material_reg.hpp>
 
 // stds
+#include <vector>
+#include <cstddef>
 #include <limits>
 
 
@@ -88,7 +90,8 @@ namespace kodama::acoustics
 					source,
 					listener,
 					maxBounces,
-					energyThreshold);
+					energyThreshold,
+					rayCount);
 
 				// Keep paths that reached the listener
 				if (path.reachedListener_)
@@ -177,6 +180,13 @@ namespace kodama::acoustics
 		 * [param] maxBounces
 		 * Maximum number of bounces for the ray
 		 * 
+		 * [param] energyThreshold
+		 * Relative energy below which a ray is abandoned
+		 * 
+		 * [param] emittedRayCount
+		 * Total number of rays emitted by the source in this
+		 * simulation, used to normalize the energy of a captured path
+		 * 
 		 * [return] 
 		 * Path of the ray
 		 * 
@@ -189,7 +199,8 @@ namespace kodama::acoustics
 			const SoundSource& source,
 			const Listener& listener,
 			int maxBounces,
-			float energyThreshold = defaultEnergyThreshold) const
+			float energyThreshold = defaultEnergyThreshold,
+			size_t emittedRayCount = 1) const
 		{
 			// Record the ray's origin as being part of the sound path
 			Path path;
@@ -222,6 +233,10 @@ namespace kodama::acoustics
 				{
 					// Listener was reached before the next surface
 
+					// Distance from the source to listener centre
+					const float unfoldedDist = path.totalDist_ + 
+						math::length(listener.pos_ - ray.ray_.origin_);
+
 					// Add final segment from ray origin to listener
 					path.totalDist_ += listenerDist;
 
@@ -238,20 +253,20 @@ namespace kodama::acoustics
 					path.propagationTime_ = path.totalDist_ / medium.speedOfSound_;
 
 					// Geometric spreading over the complete path
-					const float spreading = distanceAttenuation(path.totalDist_, source.referenceDist_);
+					const float spreading = distanceAttenuation(unfoldedDist, source.referenceDist_);
+
+					// Capture sphere only intercepts a fraction of the emitted rays.
+					// Share source's energy between the rays we expect to be captured, so
+					// total is independent of ray count and radius
+					const float captureWeight = 1.f /
+						(static_cast<float>(emittedRayCount) *
+							listenerCaptureFraction(unfoldedDist, listener.radius_));
 
 					// Viscous attenuation through the medium
 					const float mediumLoss = energyAttenuation(path.totalDist_, ray.frequency_, medium);
 
-					const float stokesLoss =
-						energyAttenuation(
-							path.totalDist_,
-							ray.frequency_,
-							medium
-						);
-
 					// Apply distance attenuation using source's reference
-					path.energy_ = ray.energy_ * spreading * mediumLoss;
+					path.energy_ = ray.energy_ *  mediumLoss * spreading * captureWeight;
 
 					// Store the direction the sound was travelling immediately
 					// before reaching the listener

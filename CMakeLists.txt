@@ -7,8 +7,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(mysofa CONFIG REQUIRED)
 
+enable_testing()
+
 add_subdirectory(core)
 add_subdirectory(test)
+add_subdirectory(examples)
 
 if (TARGET mysofa::mysofa-shared)
 	target_link_libraries(KodamaCore PRIVATE mysofa::mysofa-shared)

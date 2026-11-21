@@ -178,5 +178,40 @@ namespace kodama::acoustics
 		// amplitude so I(d) / I(0) = [A(d) / A(0)]^2
 		return amplitudeFactor * amplitudeFactor;
 	}
+	
+	/**
+	 * Computes the fraction of an isotropic source's rays that a spherical listener
+	 * capture area is expected to intercept.
+	 * 
+	 * [param] dist
+	 * Distanc efrom the source to the listener center
+	 * 
+	 * [param] radius
+	 * Listener capture radius
+	 * 
+	 * [return] 
+	 * Expected capture fraction in (0, 1]
+	 * 
+	 */
+	inline float listenerCaptureFraction(float dist, float radius)
+	{
+		// Capture area of no size intercept almost nothing
+		constexpr float minFraction = 1.e-6f;
 
+		if (radius <= 0.f)
+			return minFraction;
+
+		// Source lies inside the capture area: Every ray is captured
+		if (dist <= radius)
+			return 1.f;
+
+		const float ratio = radius / dist;
+		const float ratioSquared = ratio * ratio;
+
+		// (1 - sqrt(1 - x^2)) / 2, rewritten as x^2 / (2 * (1 + sqrt(1 - x^2)))
+		// so it stays accurate when the listener is far away
+		const float fraction = 0.5f * ratioSquared / (1.f + std::sqrt(1.f - ratioSquared));
+
+		return std::fmax(fraction, minFraction);
+	}
 }

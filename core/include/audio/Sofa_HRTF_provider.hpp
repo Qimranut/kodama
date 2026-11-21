@@ -14,9 +14,11 @@
 #include <cstddef>
 #include <stdexcept>
 #include <cmath>
+#include <vector>
+#include <utility>
+#include <algorithm>
+#include <iostream>
 
-// For keeping mysofa's header out of this public header
-struct MYSOFA_EASY;
 
 namespace kodama::audio
 {
@@ -148,6 +150,10 @@ namespace kodama::audio
 			return hrtf;
 		}
 
+		/**
+		 * Prints the n measured positions nearest to a Cartesian query point.
+		 * 
+		 */
 		void dumpNearest(float x, float y, float z, int n = 6) const
 		{
 			const MYSOFA_HRTF* h = easy_->hrtf;      // positions are Cartesian after mysofa_open

@@ -21,8 +21,11 @@
 // stds
 #include <vector>
 #include <cmath>
+#include <cstddef>
 #include <algorithm>
 #include <array>
+#include <stdexcept>
+#include <utility>
 
 
 namespace kodama::acoustics
@@ -192,6 +195,8 @@ namespace kodama::acoustics
 				// Convert path energy into an amplitude multiplier for the HRIR
 				const float amplitudeGain = std::sqrt(std::max(path.energy_, 0.f));
 
+				// Reserve enough samples for the delayed HRIRs to finish
+				// (+3 for the tail of the 4-tap fractional delay filter)
 				responseSize = std::max(responseSize, leftStart + hrtf.left_.size() + 3);
 				responseSize = std::max(responseSize, rightStart + hrtf.right_.size() + 3);
 
@@ -200,13 +205,6 @@ namespace kodama::acoustics
 					leftCoefficients, rightCoefficients, 
 					amplitudeGain, 
 					std::move(hrtf) });
-
-				const size_t leftDelaySamples = timeToSampleIndex(hrtf.leftDelaySec_, sampleRate);
-				const size_t rightDelaySamples = timeToSampleIndex(hrtf.rightDelaySec_, sampleRate);
-
-				// Reserve enough samples for the delayed HRIRs to finish
-				responseSize = std::max(responseSize, leftStart + hrtf.left_.size() + 3);
-				responseSize = std::max(responseSize, rightStart + hrtf.right_.size() + 3);
 			}
 
 			audio::ImpulseResponse response;
@@ -234,10 +232,6 @@ namespace kodama::acoustics
 		}
 
 	private:
-
-		// Discrete representation of the acoustic response
-		// Each element corresponds to 1 audio sample
-		std::vector<float> samples_;
 
 		// Path HRIR and the time at which path arrives
 		struct Contribution

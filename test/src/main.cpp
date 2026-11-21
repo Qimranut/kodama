@@ -24,6 +24,9 @@
 #include <utility>
 
 
+const std::filesystem::path assetDir = KODAMA_ASSET_DIR;
+const std::filesystem::path outputDir = KODAMA_OUTPUT_DIR;
+
 
 int main()
 {
@@ -545,11 +548,7 @@ int main()
 	kodama::audio::SofaHRTFProvider measuredHRTF;
 	std::string err;
 
-	if (!measuredHRTF.load("HRIR_FULL2DEG.sofa", 48000, err))
-	{
-		std::cerr << err << '\n';
-		return 1;
-	}
+	measuredHRTF.load((assetDir / "HRIR_FULL2DEG.sofa").string(), 48000, err);
 
 	const auto front = measuredHRTF.getHRTF(0.0f, 0.0f);
 	const auto right = measuredHRTF.getHRTF(90.0f, 0.0f);
@@ -845,13 +844,14 @@ int main()
 	std::cout << "Global peak: " << globalPeak << '\n';
 	std::cout << "Playback gain: " << playbackGain << '\n';
 
+	std::filesystem::create_directories(outputDir);
 	// Export all files using the same gain.
 	for (const auto& [name, output] : outputs)
 	{
 		const std::string fileName =
 			std::string("hrtf_") + name + ".wav";
 
-		kodama::writer::writeWav16(fileName, output, playbackGain);
+		kodama::writer::writeWav16((outputDir / fileName).string(), output, playbackGain);
 
 		std::cout << "Written: " << fileName << '\n';
 	}

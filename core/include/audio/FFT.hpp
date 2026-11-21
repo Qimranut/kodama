@@ -51,39 +51,43 @@ namespace kodama::audio
 					std::swap(data[i], data[j]);
 			}
 
+			 // Twiddle factors exp(+-2 * pi * i * k / size) in [0, size/2)
+			const double sign = inverse ? 1.0 : -1.0;
+
+			std::vector<std::complex<float>> twiddles(size / 2);
+
+			for (size_t k = 0; k < twiddles.size(); ++k)
+			{
+				const double angle = sign * 2.0 * std::numbers::pi * static_cast<double>(k) / static_cast<double>(size);
+				
+				twiddles[k] = std::complex<float>{
+					static_cast<float>(std::cos(angle)),
+					static_cast<float>(std::sin(angle)) };
+			}
+
 			// Process increasingly large groups
 			for (size_t blockSize = 2; blockSize <= size; blockSize <<= 1)
 			{
-				// Angle between adjacent roots of unity
-				const float angle =
-					2.f *
-					std::numbers::pi_v<float> /
-					static_cast<float>(blockSize) *
-					(inverse ? 1.f : -1.f);
+				const size_t halfSize = blockSize / 2;
 
-				const std::complex<float> root{ std::cos(angle), std::sin(angle) };
+				// Stride into theh twiddle table for this block size
+				const size_t stride = size / blockSize;
 
 				// Process each block
 				for (size_t blockStart = 0; blockStart < size; blockStart += blockSize)
 				{
-					std::complex<float> multiplier{ 1.f, 0.f };
-
-					const size_t halfSize = blockSize / 2;
-
-					for (size_t i = 0; i < halfSize; ++i)
+					for (size_t i = 0; i < halfSize; i++)
 					{
 						// Upper half of butterfly
 						const auto even = data[blockStart + i];
 
 						// Lower half multiplied by the appropriate root of unity
-						const auto odd = data[blockStart + i + halfSize] * multiplier;
+						const auto odd = data[blockStart + i + halfSize] * twiddles[i * stride];
 
 						// FFT butterfly
 						data[blockStart + i] = even + odd;
 
 						data[blockStart + i + halfSize] = even - odd;
-
-						multiplier *= std::polar(1.f, angle * float(i + 1));
 					}
 				}
 			}

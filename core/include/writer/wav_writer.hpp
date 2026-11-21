@@ -15,7 +15,8 @@
 
 namespace kodama::writer
 {
-	void writeWav16(const std::string& filePath,
+	inline void writeWav16(
+		const std::string& filePath,
 		const kodama::audio::Buffer& buffer,
 		float playbackGain = 1.f)
 	{

@@ -50,8 +50,8 @@ namespace kodama::acoustics
 
 				directions.push_back(
 					{
-						radius * cos(theta),
-						radius * sin(theta),
+						radius * std::cos(theta),
+						radius * std::sin(theta),
 						z
 					});
 			}
